@@ -12,7 +12,8 @@ from torch import nn
 from torch.optim import AdamW, Optimizer
 from torch.utils.data import DataLoader
 
-from transformer_decoder_slm.gpu import check_gpu_thermal_and_rest
+from .gpu import check_gpu_thermal_and_rest
+from torch.optim.lr_scheduler import SequentialLR
 
 from .config import Config
 import os
@@ -36,7 +37,7 @@ def create_optimizer(model: nn.Module, config: Config) -> Optimizer:
 
     return AdamW(
         model.parameters(),
-        lr=config.learning_rate,
+        lr=config.peak_learning_rate,
         weight_decay=config.weight_decay,
     )
 
@@ -61,6 +62,7 @@ def run_training_epoch(
     loss_function: nn.Module,
     device: torch.device,
     gradient_clipping_norm: float,
+    scheduler: SequentialLR,
     scaler,
 ) -> float:
     """Run one training epoch."""
@@ -82,6 +84,7 @@ def run_training_epoch(
         scaler.unscale_(optimizer)
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=gradient_clipping_norm)
         scaler.step(optimizer)
+        scheduler.step()
         scaler.update()
 
         token_count = targets.numel()
@@ -138,6 +141,7 @@ def build_checkpoint_payload(
     best_validation_loss: float,
     tokenizer: "Tokenizer",
     config: Config,
+    scheduler: SequentialLR,
 ) -> dict[str, object]:
     """Create a checkpoint payload."""
 
@@ -145,6 +149,7 @@ def build_checkpoint_payload(
         "epoch": epoch,
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict(),
+        "scheduler_state_dict": scheduler.state_dict(),
         "train_loss": train_loss,
         "validation_loss": validation_loss,
         "best_validation_loss": best_validation_loss,
@@ -176,6 +181,7 @@ def load_checkpoint(
     checkpoint_path: Path,
     model: nn.Module,
     optimizer: Optimizer,
+    scheduler: SequentialLR,
     tokenizer_vocabulary_size: int,
     tokenizer_fingerprint: str,
     device: torch.device,
@@ -204,6 +210,7 @@ def load_checkpoint(
 
     model.load_state_dict(checkpoint["model_state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
 
     starting_epoch = int(checkpoint["epoch"]) + 1
     best_validation_loss = float(checkpoint["best_validation_loss"])
@@ -222,6 +229,7 @@ def train_model(
     loss_function: nn.Module,
     device: torch.device,
     config: Config,
+    scheduler: SequentialLR,
     train_state: TrainState | None = None,
 ) -> TrainState:
     """Train the model and save checkpoints."""
@@ -247,6 +255,7 @@ def train_model(
             device=device,
             gradient_clipping_norm=config.gradient_clipping_norm,
             scaler=scaler,
+            scheduler=scheduler,
         )
         validation_loss = run_validation_epoch(
             model=model,
@@ -273,6 +282,7 @@ def train_model(
             best_validation_loss=state.best_validation_loss,
             tokenizer=tokenizer,
             config=config,
+            scheduler=scheduler,
         )
         save_checkpoint(latest_checkpoint_path, payload)
 

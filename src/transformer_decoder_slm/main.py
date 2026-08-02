@@ -17,6 +17,7 @@ from .generate import generate_text
 from .model import DecoderOnlyTransformer
 from .train import TrainState, create_optimizer, load_checkpoint, train_model
 from .tokenizer import save_token_ids, load_token_ids, encode_parallel
+from .scheduler import Scheduler
 
 
 def set_random_seed(seed: int) -> None:
@@ -137,6 +138,9 @@ def main() -> None:
 
     loss_function = nn.CrossEntropyLoss()
     optimizer = create_optimizer(model, config)
+    scheduler = Scheduler(
+        optimizer=optimizer, config=config, data_loader=train_dataloader
+    ).build()
 
     train_state = TrainState()
     if config.resume_from_checkpoint:
@@ -145,6 +149,7 @@ def main() -> None:
             checkpoint_path=latest_checkpoint_path,
             model=model,
             optimizer=optimizer,
+            scheduler=scheduler,
             tokenizer_vocabulary_size=tokenizer.vocabulary_size,
             tokenizer_fingerprint=tokenizer.fingerprint,
             device=device,
@@ -160,6 +165,7 @@ def main() -> None:
         device=device,
         config=config,
         train_state=train_state,
+        scheduler=scheduler,
     )
 
     best_checkpoint_path = config.checkpoint_directory / "best.pt"
@@ -168,21 +174,11 @@ def main() -> None:
             checkpoint_path=best_checkpoint_path,
             model=model,
             optimizer=optimizer,
+            scheduler=scheduler,
             tokenizer_vocabulary_size=tokenizer.vocabulary_size,
             tokenizer_fingerprint=tokenizer.fingerprint,
             device=device,
         )
-
-    # sample_text = generate_text(
-    #     model=model,
-    #     tokenizer=tokenizer,
-    #     prompt="Once upon a time",
-    #     generation_length=config.generation_length,
-    #     temperature=config.generation_temperature,
-    #     context_length=config.context_length,
-    #     device=device,
-    # )
-    # print(sample_text)
 
 
 if __name__ == "__main__":
