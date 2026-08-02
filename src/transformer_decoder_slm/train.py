@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -132,6 +133,48 @@ def run_validation_epoch(
     return total_loss / total_tokens
 
 
+def save_loss_log(
+    loss_log_path: Path,
+    epoch: int,
+    train_loss: float,
+    validation_loss: float,
+    learning_rate: float,
+) -> None:
+    """Persist one epoch's loss data as a JSON array entry."""
+
+    existing_entries: list[dict[str, float | int]] = []
+    if loss_log_path.exists():
+        payload = json.loads(loss_log_path.read_text(encoding="utf-8"))
+        if not isinstance(payload, list):
+            raise ValueError("loss log must contain a JSON array")
+        existing_entries = [entry for entry in payload if isinstance(entry, dict)]
+
+    new_entry: dict[str, float | int] = {
+        "epoch": epoch,
+        "train_loss": train_loss,
+        "validation_loss": validation_loss,
+        "learning_rate": learning_rate,
+    }
+
+    updated = False
+    for index, entry in enumerate(existing_entries):
+        if entry.get("epoch") == epoch:
+            existing_entries[index] = new_entry
+            existing_entries = existing_entries[: index + 1]
+            updated = True
+            break
+
+    if not updated:
+        existing_entries.append(new_entry)
+
+    existing_entries.sort(key=lambda entry: int(entry["epoch"]))
+    loss_log_path.parent.mkdir(parents=True, exist_ok=True)
+    loss_log_path.write_text(
+        json.dumps(existing_entries, indent=2),
+        encoding="utf-8",
+    )
+
+
 def build_checkpoint_payload(
     epoch: int,
     model: "DecoderOnlyTransformer",
@@ -237,6 +280,7 @@ def train_model(
     state = train_state or TrainState()
     latest_checkpoint_path = config.checkpoint_directory / "latest.pt"
     best_checkpoint_path = config.checkpoint_directory / "best.pt"
+    loss_log_path = config.checkpoint_directory / "loss.json"
 
     print("Start training...")
     print(
@@ -285,6 +329,13 @@ def train_model(
             scheduler=scheduler,
         )
         save_checkpoint(latest_checkpoint_path, payload)
+        save_loss_log(
+            loss_log_path=loss_log_path,
+            epoch=epoch + 1,
+            train_loss=train_loss,
+            validation_loss=validation_loss,
+            learning_rate=float(scheduler.get_last_lr()[0]),
+        )
 
         if validation_loss <= state.best_validation_loss:
             save_checkpoint(best_checkpoint_path, payload)
