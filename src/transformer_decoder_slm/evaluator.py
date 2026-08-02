@@ -341,7 +341,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--temperature",
         type=float,
-        default=0.8,
+        default=0.4,
         help="Sampling temperature.",
     )
     parser.add_argument(

@@ -29,7 +29,7 @@ class Config:
     epoch_count: int = 70
     random_seed: int = 42
     gradient_clipping_norm: float = 1.0
-    generation_length: int = 50
+    generation_length: int = 200
     generation_temperature: float = 0.8
     maximum_corpus_characters: int | None = None
     resume_from_checkpoint: bool = True
