@@ -269,7 +269,7 @@ These examples document how output quality changed across the three capacity che
 
 ## Conclusion
 
-I built a decoder-only Transformer from basic PyTorch components and used a Hugging Face tokenizer artifact for tokenization. The model was trained on WikiText-103 using causal multi-head self-attention and autoregressive next-token prediction. Scaling the model from 2 to 6 decoder blocks reduced the best validation loss from approximately 4.10 to 3.60. The final model learned coherent Wikipedia-style language patterns, but its limited scale resulted in factual errors, repetition, and weak long-range topic consistency. These are model-capacity and training-objective limitations rather than evidence that the Transformer pipeline is broken.
+tHIS decoder-only Transformer was built using basic PyTorch components and used a Hugging Face tokenizer artifact for tokenization. The model was trained on WikiText-103 using causal multi-head self-attention and autoregressive next-token prediction. Scaling the model from 2 to 6 decoder blocks reduced the best validation loss from approximately 4.10 to 3.60. The final model learned coherent Wikipedia-style language patterns, but its limited scale resulted in factual errors, repetition, and weak long-range topic consistency. These are model-capacity and training-objective limitations rather than evidence that the Transformer pipeline is broken.
 
 ## Notes
 
