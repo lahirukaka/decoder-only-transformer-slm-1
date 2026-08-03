@@ -40,7 +40,6 @@ class DecoderOnlyTransformer(nn.Module):
 
         self.final_norm = nn.LayerNorm(model_dimension)
         self.output_projection = nn.Linear(model_dimension, vocabulary_size)
-        self.output_projection.weight = self.token_embedding.weight # Weight tying
 
     def forward(self, token_ids: torch.Tensor) -> torch.Tensor:
         batch_size, sequence_length = token_ids.shape
