@@ -26,7 +26,7 @@ class Config:
     dropout: float = 0.1
     peak_learning_rate: float = 1e-3
     minimum_learning_rate = 3e-5
-    warmup_steps = 2_000
+    warmup_steps = 2000
     weight_decay: float = 1e-4
     epoch_count: int = 70
     random_seed: int = 42

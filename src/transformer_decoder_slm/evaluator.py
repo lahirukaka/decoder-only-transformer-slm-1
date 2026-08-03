@@ -218,8 +218,17 @@ def build_openrouter_user_prompt(evaluation_payload: dict[str, Any]) -> str:
     """Build the user message sent to the evaluator LLM."""
 
     pretty_payload = json.dumps(evaluation_payload, indent=2, ensure_ascii=False)
+    author_comment = evaluation_payload.get("author_comment")
+    author_comment_block = ""
+    if isinstance(author_comment, str) and author_comment.strip():
+        author_comment_block = (
+            "Author comment:\n"
+            f"{author_comment.strip()}\n\n"
+        )
+
     return (
         "You are evaluating a decoder-only language model from its prompt traces.\n\n"
+        f"{author_comment_block}"
         "For each prompt, inspect:\n"
         "- the prompt text\n"
         "- the prompt token sequence\n"
@@ -361,6 +370,11 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional OpenRouter model name. Overrides OPENROUTER_MODEL from .env when provided.",
     )
+    parser.add_argument(
+        "--author-comment",
+        default=None,
+        help="Optional extra note from the model author to include in the user prompt.",
+    )
     return parser.parse_args()
 
 
@@ -376,6 +390,8 @@ def main() -> None:
         temperature=args.temperature,
         top_k=args.top_k,
     )
+    if args.author_comment is not None and args.author_comment.strip():
+        evaluation_payload["author_comment"] = args.author_comment.strip()
 
     if args.output is not None:
         args.output.write_text(

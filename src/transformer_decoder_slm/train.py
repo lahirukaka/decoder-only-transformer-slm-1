@@ -84,9 +84,11 @@ def run_training_epoch(
         scaler.scale(loss).backward()
         scaler.unscale_(optimizer)
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=gradient_clipping_norm)
-        scaler.step(optimizer)
-        scheduler.step()
-        scaler.update()
+        step_optimizer_and_scheduler(
+            optimizer=optimizer,
+            scheduler=scheduler,
+            scaler=scaler,
+        )
 
         token_count = targets.numel()
         total_loss += loss.detach() * token_count
@@ -95,15 +97,22 @@ def run_training_epoch(
         if batch_idx % 50 == 0:
             check_gpu_thermal_and_rest(max_temp_threshold=82, cooldown_seconds=10)
 
-    process = psutil.Process(os.getpid())
-
-    print(
-        f"RAM: {process.memory_info().rss / 1024**3:.2f} GB | "
-        f"VRAM allocated: {torch.cuda.memory_allocated() / 1024**3:.2f} GB | "
-        f"VRAM reserved: {torch.cuda.memory_reserved() / 1024**3:.2f} GB"
-    )
-
     return (total_loss / total_tokens).item()
+
+
+def step_optimizer_and_scheduler(
+    optimizer: Optimizer,
+    scheduler: SequentialLR,
+    scaler,
+) -> None:
+    """Advance the scheduler only when AMP performs a real optimizer step."""
+
+    scale_before_step = scaler.get_scale()
+    scaler.step(optimizer)
+    scaler.update()
+
+    if scaler.get_scale() >= scale_before_step:
+        scheduler.step()
 
 
 @torch.inference_mode()
