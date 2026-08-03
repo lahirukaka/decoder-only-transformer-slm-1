@@ -160,7 +160,7 @@ python -m transformer_decoder_slm.main
 
 ### Creating named capacity checkpoints
 
-If you want capacity-specific inference targets such as `capacity-01`, `capacity-02`, and `capacity-03`, the current codebase expects the final checkpoint layout to look like this:
+If you want capacity-specific inference targets such as `capacity-01`, `capacity-02`, `capacity-03`, and `capacity-04`, the current codebase expects the final checkpoint layout to look like this:
 
 ```text
 checkpoints/
@@ -168,7 +168,9 @@ checkpoints/
 |   `-- best.pt
 |-- capacity-02/
 |   `-- best.pt
-`-- capacity-03/
+|-- capacity-03/
+|   `-- best.pt
+`-- capacity-04/
     `-- best.pt
 ```
 
@@ -191,11 +193,12 @@ Copy-Item checkpoints\best.pt checkpoints\capacity-01\best.pt
 
 The capacity comparison currently documented for this project is:
 
-| Model | D | Heads | Blocks | FFN | Best validation loss |
-|---|---:|---:|---:|---:|---:|
-| `capacity-01` | `128` | `4` | `2` | `512` | `4.103788831794405` |
-| `capacity-02` | `256` | `8` | `2` | `1024` | `3.754026508901224` |
-| `capacity-03` | `256` | `8` | `6` | `1024` | `3.600118788115057` |
+| Model | D | Heads | Blocks | FFN | Best validation loss | Comment |
+|---|---:|---:|---:|---:|---:|---|
+| `capacity-01` | `128` | `4` | `2` | `512` | `4.103788831794405` | Baseline smaller-capacity run |
+| `capacity-02` | `256` | `8` | `2` | `1024` | `3.754026508901224` | Wider model than `capacity-01` |
+| `capacity-03` | `256` | `8` | `6` | `1024` | `3.600118788115057` | Deeper model than `capacity-02` |
+| `capacity-04` | `256` | `8` | `6` | `1024` | `3.534931350039296` | Same configuration as `capacity-03`, but trained with a scheduler and weight tying (`token_embedding` weights equal final classifier weights) |
 
 To reproduce that kind of workflow, train one configuration at a time and archive each run's `best.pt` into its own `checkpoints/capacity-xx/` folder before starting the next one.
 
@@ -241,7 +244,7 @@ It reports the selected capacity along with status.
 
 ## Sample Generations
 
-These examples document how output quality changed across the three capacity checkpoints.
+These examples document how output quality changed across the capacity checkpoints.
 
 ### `capacity-01`
 
@@ -267,9 +270,17 @@ These examples document how output quality changed across the three capacity che
 | `In mathematics, a function is` | ` called a class of nodes . For example , the algorithm is also used to describe the class of nodes ( nodes ) , using the type of nodes ( nodes ) . As a result , the class of nodes is` |
 | `During the Second World War` | ` . The ship was laid down on 2 January 1931 and launched on 26 May 1931 . She was launched on 22 June 1934 , and commissioned into the fleet on 1 January 1936 . The ship was completed on 26 May 1936 , and was commissioned on 29 June` |
 
+### `capacity-04`
+
+| Prompt | Generation |
+|---|---|
+| `Tokyo is the capital of` | ` the city , and the city is the capital of the city . The city is located in the city 's northern suburbs . The city is the home of the city 's largest city , the city of Koku . The city is the` |
+| `In mathematics, a function is` | ` a function of the unit . The unit is the unit of the unit . The unit is the unit of the unit , which is the unit of the unit . = = = = = = = Other units = = = = = =` |
+| `During the Second World War` | ` . = = = World War II = = = In the mid @-@ 1950s , the battalion was involved in a number of operations in the North West Pacific , including the Battle of the Somme , the Battle of Chauvel` |
+
 ## Conclusion
 
-tHIS decoder-only Transformer was built using basic PyTorch components and used a Hugging Face tokenizer artifact for tokenization. The model was trained on WikiText-103 using causal multi-head self-attention and autoregressive next-token prediction. Scaling the model from 2 to 6 decoder blocks reduced the best validation loss from approximately 4.10 to 3.60. The final model learned coherent Wikipedia-style language patterns, but its limited scale resulted in factual errors, repetition, and weak long-range topic consistency. These are model-capacity and training-objective limitations rather than evidence that the Transformer pipeline is broken.
+This decoder-only Transformer was built from basic PyTorch components and used a Hugging Face tokenizer artifact for tokenization. The model was trained on WikiText-103 using causal multi-head self-attention and autoregressive next-token prediction. Scaling the model from 2 to 6 decoder blocks reduced the best validation loss from approximately 4.10 to 3.60. The final model learned coherent Wikipedia-style language patterns, but its limited scale resulted in factual errors, repetition, and weak long-range topic consistency. These are model-capacity and training-objective limitations rather than evidence that the Transformer pipeline is broken.
 
 ## Notes
 

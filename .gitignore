@@ -12,3 +12,4 @@ wheels/
 data/
 checkpoints/*/*.pt
 checkpoints/*.pt
+checkpoints/*.json
