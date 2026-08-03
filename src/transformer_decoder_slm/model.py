@@ -39,7 +39,10 @@ class DecoderOnlyTransformer(nn.Module):
         )
 
         self.final_norm = nn.LayerNorm(model_dimension)
-        self.output_projection = nn.Linear(model_dimension, vocabulary_size)
+        self.output_projection = nn.Linear(model_dimension, vocabulary_size, bias=False)
+        self.output_projection.weight = self.token_embedding.weight
+        nn.init.normal_(self.token_embedding.weight, mean=0.0, std=0.02)
+        
 
     def forward(self, token_ids: torch.Tensor) -> torch.Tensor:
         batch_size, sequence_length = token_ids.shape
