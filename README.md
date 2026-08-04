@@ -160,7 +160,7 @@ python -m transformer_decoder_slm.main
 
 ### Creating named capacity checkpoints
 
-If you want capacity-specific inference targets such as `capacity-01`, `capacity-02`, `capacity-03`, and `capacity-04`, the current codebase expects the final checkpoint layout to look like this:
+If you want capacity-specific inference targets such as `capacity-01`, `capacity-02`, `capacity-03`, `capacity-04`, and `capacity-05`, the current codebase expects the final checkpoint layout to look like this:
 
 ```text
 checkpoints/
@@ -170,7 +170,9 @@ checkpoints/
 |   `-- best.pt
 |-- capacity-03/
 |   `-- best.pt
-`-- capacity-04/
+|-- capacity-04/
+|   `-- best.pt
+`-- capacity-05/
     `-- best.pt
 ```
 
@@ -199,6 +201,7 @@ The capacity comparison currently documented for this project is:
 | `capacity-02` | `256` | `8` | `2` | `1024` | `3.754026508901224` | Wider model than `capacity-01` |
 | `capacity-03` | `256` | `8` | `6` | `1024` | `3.600118788115057` | Deeper model than `capacity-02` |
 | `capacity-04` | `256` | `8` | `6` | `1024` | `3.534931350039296` | Same configuration as `capacity-03`, but trained with a scheduler and weight tying (`token_embedding` weights equal final classifier weights) |
+| `capacity-05` | `256` | `8` | `6` | `1024` | `3.4712566825973084` | Same width/depth as `capacity-04`, but uses `pre_norm=True` and untied output projection weights |
 
 To reproduce that kind of workflow, train one configuration at a time and archive each run's `best.pt` into its own `checkpoints/capacity-xx/` folder before starting the next one.
 
@@ -277,6 +280,14 @@ These examples document how output quality changed across the capacity checkpoin
 | `Tokyo is the capital of` | ` the city , and the city is the capital of the city . The city is located in the city 's northern suburbs . The city is the home of the city 's largest city , the city of Koku . The city is the` |
 | `In mathematics, a function is` | ` a function of the unit . The unit is the unit of the unit . The unit is the unit of the unit , which is the unit of the unit . = = = = = = = Other units = = = = = =` |
 | `During the Second World War` | ` . = = = World War II = = = In the mid @-@ 1950s , the battalion was involved in a number of operations in the North West Pacific , including the Battle of the Somme , the Battle of Chauvel` |
+
+### `capacity-05`
+
+| Prompt | Generation |
+|---|---|
+| `Tokyo is the capital of` | ` the Tokyo District . It is located on the edge of the city of Tokyo , which was founded in 1949 . The city is a member of the Hōkaku Municipal Corporation , who owns the city and is the city 's flagship center` |
+| `In mathematics, a function is` | ` , in fact , a vector unit that is used as an eigenvalue in a number of binary fields . Thus , the real numbers of the two fields are in the form of a vector unit , which is a vector unit` |
+| `During the Second World War` | ` . In 1950 , the British government agreed to the US military intervention in the Vietnam War , a move that was made by the Royal Australian Navy to prevent the war from exposing the US and Australia to the United Kingdom . \n \n = = = World` |
 
 ## Conclusion
 
