@@ -11,5 +11,6 @@ wheels/
 .env
 data/
 checkpoints/*/*.pt
+checkpoints/*/*.json
 checkpoints/*.pt
 checkpoints/*.json
