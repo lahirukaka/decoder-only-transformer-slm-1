@@ -14,7 +14,7 @@ import torch
 
 from .api.app import resolve_checkpoint_path
 from .config import Config
-from .generate import GenerationStepTrace, generate_text
+from .generate import GenerationStepTrace, generate_text, config_for_capacity
 from .main import create_tokenizer
 from .model import DecoderOnlyTransformer
 
@@ -119,6 +119,7 @@ def load_capacity_runtime(
         number_of_decoder_blocks=int(model_config["number_of_decoder_blocks"]),
         feed_forward_dimension=int(model_config["feed_forward_dimension"]),
         dropout=float(model_config["dropout"]),
+        config=config,
     ).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
@@ -147,7 +148,7 @@ def evaluate_capacity(
 ) -> dict[str, Any]:
     """Run fixed prompts against one capacity checkpoint and collect traces."""
 
-    config = Config()
+    config = config_for_capacity(capacity_name, Config())
     tokenizer, model, device, metadata = load_capacity_runtime(
         capacity_name=capacity_name, config=config
     )
@@ -221,10 +222,7 @@ def build_openrouter_user_prompt(evaluation_payload: dict[str, Any]) -> str:
     author_comment = evaluation_payload.get("author_comment")
     author_comment_block = ""
     if isinstance(author_comment, str) and author_comment.strip():
-        author_comment_block = (
-            "Author comment:\n"
-            f"{author_comment.strip()}\n\n"
-        )
+        author_comment_block = "Author comment:\n" f"{author_comment.strip()}\n\n"
 
     return (
         "You are evaluating a decoder-only language model from its prompt traces.\n\n"

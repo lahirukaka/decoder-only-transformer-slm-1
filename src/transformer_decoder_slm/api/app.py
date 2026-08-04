@@ -14,7 +14,7 @@ from fastapi import FastAPI, HTTPException
 import uvicorn
 
 from ..config import Config
-from ..generate import generate_text
+from ..generate import generate_text, config_for_capacity
 from ..main import create_tokenizer
 from ..model import DecoderOnlyTransformer
 from ..tokenizer import Tokenizer
@@ -56,6 +56,7 @@ class InferenceRuntime:
 
     def load(self) -> None:
         self.capacity_name = resolve_capacity_name(self.capacity_name)
+        self.config = config_for_capacity(self.capacity_name, self.config)
         tokenizer = create_tokenizer(self.config.tokenizer_resources_directory)
         checkpoint_path = resolve_checkpoint_path(
             checkpoint_directory=self.config.checkpoint_directory,
@@ -96,6 +97,7 @@ class InferenceRuntime:
             number_of_decoder_blocks=int(model_config["number_of_decoder_blocks"]),
             feed_forward_dimension=int(model_config["feed_forward_dimension"]),
             dropout=float(model_config["dropout"]),
+            config=self.config,
         ).to(self.device)
         model.load_state_dict(checkpoint["model_state_dict"])
         model.eval()
