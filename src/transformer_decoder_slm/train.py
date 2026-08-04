@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 import json
 import time
 from dataclasses import dataclass
@@ -64,6 +65,7 @@ def run_training_epoch(
     device: torch.device,
     gradient_clipping_norm: float,
     scheduler: SequentialLR,
+    global_step_counter: Counter,
     scaler,
 ) -> float:
     """Run one training epoch."""
@@ -93,6 +95,7 @@ def run_training_epoch(
         token_count = targets.numel()
         total_loss += loss.detach() * token_count
         total_tokens += token_count
+        global_step_counter["batch"] += 1
 
         if batch_idx % 50 == 0:
             check_gpu_thermal_and_rest(max_temp_threshold=82, cooldown_seconds=10)
@@ -148,6 +151,7 @@ def save_loss_log(
     train_loss: float,
     validation_loss: float,
     learning_rate: float,
+    global_steps: int,
 ) -> None:
     """Persist one epoch's loss data as a JSON array entry."""
 
@@ -163,6 +167,7 @@ def save_loss_log(
         "train_loss": train_loss,
         "validation_loss": validation_loss,
         "learning_rate": learning_rate,
+        "global_steps": global_steps,
     }
 
     updated = False
@@ -297,6 +302,7 @@ def train_model(
     )
 
     scaler = torch.amp.GradScaler("cuda", enabled=device.type == "cuda")
+    global_step_counter = Counter(batch=0)
 
     for epoch in range(state.starting_epoch, config.epoch_count):
         epoch_start_time = time.perf_counter()
@@ -309,6 +315,7 @@ def train_model(
             gradient_clipping_norm=config.gradient_clipping_norm,
             scaler=scaler,
             scheduler=scheduler,
+            global_step_counter=global_step_counter,
         )
         validation_loss = run_validation_epoch(
             model=model,
@@ -343,6 +350,7 @@ def train_model(
             epoch=epoch + 1,
             train_loss=train_loss,
             validation_loss=validation_loss,
+            global_steps=global_step_counter["batch"],
             learning_rate=float(scheduler.get_last_lr()[0]),
         )
 

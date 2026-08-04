@@ -134,6 +134,7 @@ def main() -> None:
         number_of_decoder_blocks=config.number_of_decoder_blocks,
         feed_forward_dimension=config.feed_forward_dimension,
         dropout=config.dropout,
+        config=config,
     ).to(device)
 
     loss_function = nn.CrossEntropyLoss()

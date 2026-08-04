@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING
 import torch
 from torch import nn
 
+from .config import Config
+
 if TYPE_CHECKING:
     from .tokenizer import Tokenizer
 
@@ -30,6 +32,24 @@ class GenerationStepTrace:
     # generated_token_id: int
     generated_token_text: str
     top_k_predictions: list[TopKPrediction]
+
+
+def config_for_capacity(
+    capacity_name: str,
+    config: Config,
+) -> Config:
+    """Return a config updated for the requested capacity-specific behavior."""
+
+    normalized_capacity_name = capacity_name.strip()
+    if not normalized_capacity_name:
+        raise ValueError("capacity_name must not be empty")
+
+    capacity_index = _parse_capacity_index(normalized_capacity_name)
+    return config.with_updates(
+        {
+            "pre_norm": capacity_index >= 5,
+        }
+    )
 
 
 @torch.inference_mode()
@@ -141,3 +161,20 @@ def _resolve_context_length(model: nn.Module) -> int:
         msg = "model must expose a positive integer maximum_context_length"
         raise ValueError(msg)
     return context_length
+
+
+def _parse_capacity_index(capacity_name: str) -> int:
+    """Extract the numeric suffix from names like capacity-05."""
+
+    prefix = "capacity-"
+    if not capacity_name.startswith(prefix):
+        raise ValueError(
+            "capacity_name must use the format 'capacity-XX', for example 'capacity-05'"
+        )
+
+    suffix = capacity_name[len(prefix) :]
+    if not suffix.isdigit():
+        raise ValueError(
+            "capacity_name must use the format 'capacity-XX', for example 'capacity-05'"
+        )
+    return int(suffix)

@@ -1,6 +1,8 @@
 import torch
 from torch import nn
 
+from .config import Config
+
 from .block import DecoderBlock
 
 
@@ -14,6 +16,7 @@ class DecoderOnlyTransformer(nn.Module):
         number_of_decoder_blocks: int,
         feed_forward_dimension: int,
         dropout: float,
+        config: Config,
     ) -> None:
         super().__init__()
 
@@ -33,6 +36,7 @@ class DecoderOnlyTransformer(nn.Module):
                     feed_forward_dimension=feed_forward_dimension,
                     dropout=dropout,
                     maximum_context_length=maximum_context_length,
+                    config=config,
                 )
                 for _ in range(number_of_decoder_blocks)
             ]
@@ -42,7 +46,7 @@ class DecoderOnlyTransformer(nn.Module):
         self.output_projection = nn.Linear(model_dimension, vocabulary_size)
 
     def forward(self, token_ids: torch.Tensor) -> torch.Tensor:
-        batch_size, sequence_length = token_ids.shape
+        _batch_size, sequence_length = token_ids.shape
 
         if sequence_length > self.maximum_context_length:
             raise ValueError("input sequence length exceeds maximum_context_length")

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, fields
 from pathlib import Path
+from typing import Any
 
 
 @dataclass(slots=True)
@@ -35,6 +36,22 @@ class Config:
     generation_temperature: float = 0.8
     maximum_corpus_characters: int | None = None
     resume_from_checkpoint: bool = True
+
+    # Capacity wise breaking configuration
+    pre_norm: bool = True  # Use False with models before capacity-05
+
+    def with_updates(self, updates: dict[str, Any]) -> "Config":
+        """Return a new config with a batch of updated values applied."""
+
+        valid_field_names = {field.name for field in fields(self)}
+        unknown_keys = sorted(set(updates) - valid_field_names)
+        if unknown_keys:
+            msg = f"Unknown config fields: {', '.join(unknown_keys)}"
+            raise ValueError(msg)
+
+        merged_values = asdict(self)
+        merged_values.update(updates)
+        return Config(**merged_values)
 
     def __post_init__(self) -> None:
         if self.model_dimension % self.number_of_heads != 0:
