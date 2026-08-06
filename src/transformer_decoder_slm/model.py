@@ -4,6 +4,7 @@ from torch import nn
 from .config import Config
 
 from .block import DecoderBlock
+from .normalization import RMSNorm
 
 
 class DecoderOnlyTransformer(nn.Module):
@@ -22,9 +23,14 @@ class DecoderOnlyTransformer(nn.Module):
 
         self.maximum_context_length = maximum_context_length
         self.model_dimension = model_dimension
+        self.config = config
 
         self.token_embedding = nn.Embedding(vocabulary_size, model_dimension)
-        self.position_embedding = nn.Embedding(maximum_context_length, model_dimension)
+
+        if not config.rope:
+            self.position_embedding = nn.Embedding(
+                maximum_context_length, model_dimension
+            )
 
         self.embedding_dropout = nn.Dropout(dropout)
 
@@ -42,8 +48,23 @@ class DecoderOnlyTransformer(nn.Module):
             ]
         )
 
-        self.final_norm = nn.LayerNorm(model_dimension)
+        self.final_norm = RMSNorm(model_dimension)
         self.output_projection = nn.Linear(model_dimension, vocabulary_size)
+
+    def _position_embedding(
+        self,
+        rope: bool,
+        sequence_length: int,
+        token_ids: torch.Tensor,
+    ) -> torch.Tensor:
+
+        if rope:
+            return self.token_embedding(token_ids)
+        else:
+            position_ids = torch.arange(sequence_length, device=token_ids.device)
+            token_embeddings = self.token_embedding(token_ids)
+            position_embeddings = self.position_embedding(position_ids)
+            return token_embeddings + position_embeddings
 
     def forward(self, token_ids: torch.Tensor) -> torch.Tensor:
         _batch_size, sequence_length = token_ids.shape
@@ -51,12 +72,8 @@ class DecoderOnlyTransformer(nn.Module):
         if sequence_length > self.maximum_context_length:
             raise ValueError("input sequence length exceeds maximum_context_length")
 
-        position_ids = torch.arange(sequence_length, device=token_ids.device)
-
-        token_embeddings = self.token_embedding(token_ids)
-        position_embeddings = self.position_embedding(position_ids)
-        combined = token_embeddings + position_embeddings
-        x = self.embedding_dropout(combined)
+        x = self._position_embedding(self.config.rope, sequence_length, token_ids)
+        x = self.embedding_dropout(x)
 
         for decoder_block in self.decoder_blocks:
             x = decoder_block(x)

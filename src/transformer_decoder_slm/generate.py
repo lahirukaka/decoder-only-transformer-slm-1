@@ -48,6 +48,8 @@ def config_for_capacity(
     return config.with_updates(
         {
             "pre_norm": capacity_index >= 5,
+            "rope": capacity_index >= 6,
+            "rms_norm": capacity_index >= 6,
         }
     )
 

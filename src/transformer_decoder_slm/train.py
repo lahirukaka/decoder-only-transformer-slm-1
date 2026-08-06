@@ -202,7 +202,7 @@ def build_checkpoint_payload(
 ) -> dict[str, object]:
     """Create a checkpoint payload."""
 
-    return {
+    payload = {
         "epoch": epoch,
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict(),
@@ -225,6 +225,15 @@ def build_checkpoint_payload(
             "fingerprint": tokenizer.fingerprint,
         },
     }
+
+    if config.pre_norm:
+        payload["model_config"]["normalization_placement"] = "pre_norm"
+    if config.rope:
+        payload["model_config"]["normalization_type"] = "rmsnorm"
+        payload["model_config"]["position_encoding"] = "rope"
+        payload["model_config"]["rope_base"] = 10_000.0
+
+    return payload
 
 
 def save_checkpoint(checkpoint_path: Path, payload: dict[str, object]) -> None:

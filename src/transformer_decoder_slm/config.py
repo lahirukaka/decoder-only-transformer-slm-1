@@ -19,7 +19,7 @@ class Config:
     checkpoint_directory: Path = Path("checkpoints")
     dataset_stride: int = 128
     context_length: int = 128
-    batch_size: int = 64
+    batch_size: int = 128
     model_dimension: int = 256
     number_of_heads: int = 8
     number_of_decoder_blocks: int = 6
@@ -39,6 +39,10 @@ class Config:
 
     # Capacity wise breaking configuration
     pre_norm: bool = True  # Use False with models before capacity-05
+
+    # Use False with models before capacity-06
+    rope: bool = True
+    rms_norm: bool = True
 
     def with_updates(self, updates: dict[str, Any]) -> "Config":
         """Return a new config with a batch of updated values applied."""

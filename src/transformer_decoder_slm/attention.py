@@ -2,6 +2,9 @@ import torch
 from torch import nn
 import math
 
+from .rope import RotaryPositionEmbedding
+from .config import Config
+
 
 class CausalMultiHeadSelfAttention(nn.Module):
     def __init__(
@@ -10,17 +13,25 @@ class CausalMultiHeadSelfAttention(nn.Module):
         number_of_heads: int,
         dropout: float,
         maximum_context_length: int,
+        config: Config,
     ) -> None:
         super().__init__()
 
         if model_dimension % number_of_heads != 0:
             raise ValueError("model_dimension must be divisible by number_of_heads")
 
+        self.config = config
         self.model_dimension = model_dimension
         self.number_of_heads = number_of_heads
         self.dropout = dropout
         self.maximum_context_length = maximum_context_length
         self.head_dimension = model_dimension // number_of_heads
+
+        if config.rope:
+            self.rope = RotaryPositionEmbedding(
+                head_dimention=self.head_dimension,
+                maximum_context_length=maximum_context_length,
+            )
 
         # for efficency, project for D and then split into heads
         self.query_projection = nn.Linear(model_dimension, model_dimension)
@@ -51,6 +62,10 @@ class CausalMultiHeadSelfAttention(nn.Module):
         queries = self._split_into_heads(queries, batch_size, sequence_length)
         keys = self._split_into_heads(keys, batch_size, sequence_length)
         values = self._split_into_heads(values, batch_size, sequence_length)
+
+        if self.config.rope:
+            # rotate q and k
+            queries, keys = self.rope(queries, keys)
 
         # calculate raw attention scores
         # output -> [B, H, T, T]

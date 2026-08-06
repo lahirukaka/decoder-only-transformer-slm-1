@@ -3,6 +3,7 @@ from torch import nn
 
 from .config import Config
 from .attention import CausalMultiHeadSelfAttention
+from .normalization import RMSNorm
 
 
 class DecoderBlock(nn.Module):
@@ -25,8 +26,9 @@ class DecoderBlock(nn.Module):
             number_of_heads=number_of_attention_heads,
             dropout=dropout,
             maximum_context_length=maximum_context_length,
+            config=config,
         )
-        self.norm_att = nn.LayerNorm(model_dimension)
+        self.norm_att = RMSNorm(model_dimension)
 
         self.feed_forward = nn.Sequential(
             nn.Linear(model_dimension, feed_forward_dimension),
@@ -35,7 +37,7 @@ class DecoderBlock(nn.Module):
             nn.Linear(feed_forward_dimension, model_dimension),
             nn.Dropout(dropout),
         )
-        self.norm_ff = nn.LayerNorm(model_dimension)
+        self.norm_ff = RMSNorm(model_dimension)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         if self.config.pre_norm:
@@ -46,13 +48,13 @@ class DecoderBlock(nn.Module):
 
     def pre_norm_forward(self, inputs: torch.Tensor) -> torch.Tensor:
         # attention layer
-        inputs = self.norm_att(inputs)  # pre-norm
-        attention_output = self.attention(inputs)
+        inputs_norm = self.norm_att(inputs)  # pre-norm
+        attention_output = self.attention(inputs_norm)
         x = attention_output + inputs  # residual
 
         # feed forward layer
-        x = self.norm_ff(x)  # pre-norm
-        feed_forward_output = self.feed_forward(x)
+        x_norm = self.norm_ff(x)  # pre-norm
+        feed_forward_output = self.feed_forward(x_norm)
         x = feed_forward_output + x  # residual
 
         return x
