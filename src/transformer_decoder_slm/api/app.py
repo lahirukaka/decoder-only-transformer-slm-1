@@ -14,7 +14,7 @@ from fastapi import FastAPI, HTTPException
 import uvicorn
 
 from ..config import Config
-from ..generate import generate_text, config_for_capacity
+from ..generate import generate_text
 from ..main import create_tokenizer
 from ..model import DecoderOnlyTransformer
 from ..tokenizer import Tokenizer
@@ -56,7 +56,6 @@ class InferenceRuntime:
 
     def load(self) -> None:
         self.capacity_name = resolve_capacity_name(self.capacity_name)
-        self.config = config_for_capacity(self.capacity_name, self.config)
         tokenizer = create_tokenizer(self.config.tokenizer_resources_directory)
         checkpoint_path = resolve_checkpoint_path(
             checkpoint_directory=self.config.checkpoint_directory,
@@ -88,6 +87,15 @@ class InferenceRuntime:
         model_config = checkpoint.get("model_config")
         if not isinstance(model_config, dict):
             raise ValueError("checkpoint is missing model_config")
+        self.config = self.config.with_model_config(model_config)
+        print(
+            "Loaded model config:",
+            {
+                **model_config,
+                "pre_norm": self.config.pre_norm,
+                "rope": self.config.rope,
+            },
+        )
 
         model = DecoderOnlyTransformer(
             vocabulary_size=int(model_config["vocabulary_size"]),

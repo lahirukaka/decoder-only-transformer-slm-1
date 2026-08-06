@@ -218,6 +218,7 @@ def build_checkpoint_payload(
             "number_of_decoder_blocks": config.number_of_decoder_blocks,
             "feed_forward_dimension": config.feed_forward_dimension,
             "dropout": config.dropout,
+            "normalization_type": config.normalization_type,
         },
         "tokenizer_metadata": {
             "resources_directory": str(config.tokenizer_resources_directory),
@@ -229,7 +230,6 @@ def build_checkpoint_payload(
     if config.pre_norm:
         payload["model_config"]["normalization_placement"] = "pre_norm"
     if config.rope:
-        payload["model_config"]["normalization_type"] = "rmsnorm"
         payload["model_config"]["position_encoding"] = "rope"
         payload["model_config"]["rope_base"] = 10_000.0
 

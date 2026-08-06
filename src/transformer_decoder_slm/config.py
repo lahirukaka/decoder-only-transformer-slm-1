@@ -36,13 +36,9 @@ class Config:
     generation_temperature: float = 0.8
     maximum_corpus_characters: int | None = None
     resume_from_checkpoint: bool = True
-
-    # Capacity wise breaking configuration
-    pre_norm: bool = True  # Use False with models before capacity-05
-
-    # Use False with models before capacity-06
+    normalization_type: str = "layernorm"  # "layernorm" | "rmsnorm"
+    pre_norm: bool = True
     rope: bool = True
-    rms_norm: bool = True
 
     def with_updates(self, updates: dict[str, Any]) -> "Config":
         """Return a new config with a batch of updated values applied."""
@@ -56,6 +52,25 @@ class Config:
         merged_values = asdict(self)
         merged_values.update(updates)
         return Config(**merged_values)
+
+    def with_model_config(self, model_config: dict[str, Any]) -> "Config":
+        """Return a new config updated from checkpoint model metadata."""
+
+        updates: dict[str, Any] = {}
+
+        normalization_placement = model_config.get("normalization_placement")
+        updates["pre_norm"] = normalization_placement == "pre_norm"
+
+        normalization_type = model_config.get("normalization_type")
+        updates["normalization_type"] = normalization_type
+
+        position_encoding = model_config.get("position_encoding")
+        updates["rope"] = position_encoding == "rope"
+
+        if not updates:
+            return self
+
+        return self.with_updates(updates)
 
     def __post_init__(self) -> None:
         if self.model_dimension % self.number_of_heads != 0:

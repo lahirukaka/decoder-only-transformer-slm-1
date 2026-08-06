@@ -1,8 +1,10 @@
 from torch import nn
 import torch
 
+from .config import Config
 
-class RMSNorm(nn.Module):
+
+class _RMSNorm(nn.Module):
     def __init__(self, dimention: int, epsilon: float = 1e-6) -> None:
         super().__init__()
 
@@ -16,3 +18,16 @@ class RMSNorm(nn.Module):
         )
         normalized = inputs * torch.rsqrt(mean_square + self.epsilon)
         return self.weight * normalized
+
+
+class Normalization(nn.Module):
+    def __init__(self, dimention: int, config: Config) -> None:
+        super().__init__()
+
+        if config.normalization_type == "rmsnorm":
+            self.norm = _RMSNorm(dimention)
+        else:
+            self.norm = nn.LayerNorm(dimention)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        return self.norm(inputs)

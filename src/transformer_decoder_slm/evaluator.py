@@ -14,7 +14,7 @@ import torch
 
 from .api.app import resolve_checkpoint_path
 from .config import Config
-from .generate import GenerationStepTrace, generate_text, config_for_capacity
+from .generate import GenerationStepTrace, generate_text
 from .main import create_tokenizer
 from .model import DecoderOnlyTransformer
 
@@ -110,6 +110,15 @@ def load_capacity_runtime(
     model_config = checkpoint.get("model_config")
     if not isinstance(model_config, dict):
         raise ValueError("checkpoint is missing model_config")
+    config = config.with_model_config(model_config)
+    print(
+        "Loaded model config:",
+        {
+            **model_config,
+            "pre_norm": config.pre_norm,
+            "rope": config.rope,
+        },
+    )
 
     model = DecoderOnlyTransformer(
         vocabulary_size=int(model_config["vocabulary_size"]),
@@ -148,7 +157,7 @@ def evaluate_capacity(
 ) -> dict[str, Any]:
     """Run fixed prompts against one capacity checkpoint and collect traces."""
 
-    config = config_for_capacity(capacity_name, Config())
+    config = Config()
     tokenizer, model, device, metadata = load_capacity_runtime(
         capacity_name=capacity_name, config=config
     )

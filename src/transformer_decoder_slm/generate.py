@@ -34,26 +34,6 @@ class GenerationStepTrace:
     top_k_predictions: list[TopKPrediction]
 
 
-def config_for_capacity(
-    capacity_name: str,
-    config: Config,
-) -> Config:
-    """Return a config updated for the requested capacity-specific behavior."""
-
-    normalized_capacity_name = capacity_name.strip()
-    if not normalized_capacity_name:
-        raise ValueError("capacity_name must not be empty")
-
-    capacity_index = _parse_capacity_index(normalized_capacity_name)
-    return config.with_updates(
-        {
-            "pre_norm": capacity_index >= 5,
-            "rope": capacity_index >= 6,
-            "rms_norm": capacity_index >= 6,
-        }
-    )
-
-
 @torch.inference_mode()
 def generate_text(
     model: nn.Module,

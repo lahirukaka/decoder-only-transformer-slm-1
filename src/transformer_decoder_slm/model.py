@@ -4,7 +4,7 @@ from torch import nn
 from .config import Config
 
 from .block import DecoderBlock
-from .normalization import RMSNorm
+from .normalization import Normalization
 
 
 class DecoderOnlyTransformer(nn.Module):
@@ -48,7 +48,7 @@ class DecoderOnlyTransformer(nn.Module):
             ]
         )
 
-        self.final_norm = RMSNorm(model_dimension)
+        self.final_norm = Normalization(model_dimension, config)
         self.output_projection = nn.Linear(model_dimension, vocabulary_size)
 
     def _position_embedding(
