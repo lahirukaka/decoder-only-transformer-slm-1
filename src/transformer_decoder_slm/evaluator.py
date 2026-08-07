@@ -115,8 +115,6 @@ def load_capacity_runtime(
         "Loaded model config:",
         {
             **model_config,
-            "pre_norm": config.pre_norm,
-            "rope": config.rope,
         },
     )
 

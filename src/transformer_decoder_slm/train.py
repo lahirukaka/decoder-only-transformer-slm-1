@@ -32,6 +32,7 @@ class TrainState:
 
     starting_epoch: int = 0
     best_validation_loss: float = float("inf")
+    global_steps: int = 0
 
 
 def create_optimizer(model: nn.Module, config: Config) -> Optimizer:
@@ -189,6 +190,30 @@ def save_loss_log(
     )
 
 
+def load_last_global_steps(loss_log_path: Path) -> int:
+    """Return the latest persisted global step count from the loss log."""
+
+    if not loss_log_path.exists():
+        return 0
+
+    payload = json.loads(loss_log_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, list):
+        raise ValueError("loss log must contain a JSON array")
+
+    existing_entries = [entry for entry in payload if isinstance(entry, dict)]
+    if not existing_entries:
+        return 0
+
+    latest_entry = max(
+        existing_entries,
+        key=lambda entry: int(entry.get("epoch", 0)),
+    )
+    global_steps = latest_entry.get("global_steps", 0)
+    if not isinstance(global_steps, int):
+        global_steps = int(global_steps)
+    return global_steps
+
+
 def build_checkpoint_payload(
     epoch: int,
     model: "DecoderOnlyTransformer",
@@ -251,6 +276,7 @@ def load_checkpoint(
     tokenizer_vocabulary_size: int,
     tokenizer_fingerprint: str,
     device: torch.device,
+    loss_log_path: Path | None = None,
 ) -> TrainState:
     """Load a checkpoint if it exists and is compatible."""
 
@@ -280,9 +306,13 @@ def load_checkpoint(
 
     starting_epoch = int(checkpoint["epoch"]) + 1
     best_validation_loss = float(checkpoint["best_validation_loss"])
+    global_steps = (
+        load_last_global_steps(loss_log_path) if loss_log_path is not None else 0
+    )
     return TrainState(
         starting_epoch=starting_epoch,
         best_validation_loss=best_validation_loss,
+        global_steps=global_steps,
     )
 
 
@@ -311,7 +341,7 @@ def train_model(
     )
 
     scaler = torch.amp.GradScaler("cuda", enabled=device.type == "cuda")
-    global_step_counter = Counter(batch=0)
+    global_step_counter = Counter(batch=state.global_steps)
 
     for epoch in range(state.starting_epoch, config.epoch_count):
         epoch_start_time = time.perf_counter()

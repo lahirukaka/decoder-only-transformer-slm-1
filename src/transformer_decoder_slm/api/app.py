@@ -92,8 +92,6 @@ class InferenceRuntime:
             "Loaded model config:",
             {
                 **model_config,
-                "pre_norm": self.config.pre_norm,
-                "rope": self.config.rope,
             },
         )
 

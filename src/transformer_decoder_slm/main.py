@@ -146,6 +146,7 @@ def main() -> None:
     train_state = TrainState()
     if config.resume_from_checkpoint:
         latest_checkpoint_path = config.checkpoint_directory / "best.pt"
+        loss_log_path = config.checkpoint_directory / "loss.json"
         train_state = load_checkpoint(
             checkpoint_path=latest_checkpoint_path,
             model=model,
@@ -154,6 +155,7 @@ def main() -> None:
             tokenizer_vocabulary_size=tokenizer.vocabulary_size,
             tokenizer_fingerprint=tokenizer.fingerprint,
             device=device,
+            loss_log_path=loss_log_path,
         )
 
     train_model(
