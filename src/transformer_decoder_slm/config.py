@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
-from typing import Any
 
 
 @dataclass(slots=True)
@@ -23,7 +22,7 @@ class Config:
     model_dimension: int = 256
     number_of_heads: int = 8
     number_of_decoder_blocks: int = 6
-    feed_forward_dimension: int = 1024
+    feed_forward_dimension: int = 672
     dropout: float = 0.1
     peak_learning_rate: float = 1e-3
     minimum_learning_rate = 3e-5
@@ -36,9 +35,10 @@ class Config:
     generation_temperature: float = 0.8
     maximum_corpus_characters: int | None = None
     resume_from_checkpoint: bool = True
-    normalization_type: str = "layernorm"  # "layernorm" | "rmsnorm"
+    normalization_type: str = "rmsnorm"  # "layernorm" | "rmsnorm"
     pre_norm: bool = True
     rope: bool = True
+    feed_forward_type: str = "swiglu"  # normal | swiglu
 
     def with_updates(self, updates: dict[str, Any]) -> "Config":
         """Return a new config with a batch of updated values applied."""
@@ -56,16 +56,21 @@ class Config:
     def with_model_config(self, model_config: dict[str, Any]) -> "Config":
         """Return a new config updated from checkpoint model metadata."""
 
-        updates: dict[str, Any] = {}
+        updates: dict[str, object] = {}
 
         normalization_placement = model_config.get("normalization_placement")
         updates["pre_norm"] = normalization_placement == "pre_norm"
 
-        normalization_type = model_config.get("normalization_type")
-        updates["normalization_type"] = normalization_type
+        updates["normalization_type"] = model_config.get("normalization_type")
 
         position_encoding = model_config.get("position_encoding")
         updates["rope"] = position_encoding == "rope"
+
+        updates["feed_forward_type"] = model_config.get("feed_forward_type")
+
+        updates["feed_forward_dimension"] = model_config.get(
+            "feed_forward_dimension", 0
+        )
 
         if not updates:
             return self

@@ -18,8 +18,7 @@ from .gpu import check_gpu_thermal_and_rest
 from torch.optim.lr_scheduler import SequentialLR
 
 from .config import Config
-import os
-import psutil
+from typing import Any
 
 if TYPE_CHECKING:
     from .model import DecoderOnlyTransformer
@@ -244,6 +243,7 @@ def build_checkpoint_payload(
             "feed_forward_dimension": config.feed_forward_dimension,
             "dropout": config.dropout,
             "normalization_type": config.normalization_type,
+            "feed_forward_type": config.feed_forward_type,
         },
         "tokenizer_metadata": {
             "resources_directory": str(config.tokenizer_resources_directory),
@@ -252,11 +252,16 @@ def build_checkpoint_payload(
         },
     }
 
+    model_config: dict[str, Any] = payload["model_config"]
     if config.pre_norm:
-        payload["model_config"]["normalization_placement"] = "pre_norm"
+        model_config["normalization_placement"] = "pre_norm"
     if config.rope:
-        payload["model_config"]["position_encoding"] = "rope"
-        payload["model_config"]["rope_base"] = 10_000.0
+        model_config.update(
+            {
+                "position_encoding": "rope",
+                "rope_base": 10_000.0,
+            }
+        )
 
     return payload
 

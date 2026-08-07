@@ -4,6 +4,7 @@ from torch import nn
 from .config import Config
 from .attention import CausalMultiHeadSelfAttention
 from .normalization import Normalization
+from .feed_forward import FeedForward
 
 
 class DecoderBlock(nn.Module):
@@ -30,12 +31,11 @@ class DecoderBlock(nn.Module):
         )
         self.norm_att = Normalization(model_dimension, config)
 
-        self.feed_forward = nn.Sequential(
-            nn.Linear(model_dimension, feed_forward_dimension),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(feed_forward_dimension, model_dimension),
-            nn.Dropout(dropout),
+        self.feed_forward = FeedForward(
+            model_dimentions=model_dimension,
+            feed_forward_dimentions=feed_forward_dimension,
+            dropout=dropout,
+            config=config,
         )
         self.norm_ff = Normalization(model_dimension, config)
 
