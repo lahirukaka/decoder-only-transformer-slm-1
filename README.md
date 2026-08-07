@@ -160,7 +160,7 @@ python -m transformer_decoder_slm.main
 
 ### Creating named capacity checkpoints
 
-If you want capacity-specific inference targets such as `capacity-01`, `capacity-02`, `capacity-03`, `capacity-04`, and `capacity-05`, the current codebase expects the final checkpoint layout to look like this:
+If you want capacity-specific inference targets such as `capacity-01`, `capacity-02`, `capacity-03`, `capacity-04`, `capacity-05`, and `capacity-06`, the current codebase expects the final checkpoint layout to look like this:
 
 ```text
 checkpoints/
@@ -172,7 +172,9 @@ checkpoints/
 |   `-- best.pt
 |-- capacity-04/
 |   `-- best.pt
-`-- capacity-05/
+|-- capacity-05/
+|   `-- best.pt
+`-- capacity-06/
     `-- best.pt
 ```
 
@@ -202,6 +204,7 @@ The capacity comparison currently documented for this project is:
 | `capacity-03` | `256` | `8` | `6` | `1024` | `3.600118788115057` | Deeper model than `capacity-02` |
 | `capacity-04` | `256` | `8` | `6` | `1024` | `3.534931350039296` | Same configuration as `capacity-03`, but trained with a scheduler and weight tying (`token_embedding` weights equal final classifier weights) |
 | `capacity-05` | `256` | `8` | `6` | `1024` | `3.4712566825973084` | Same width/depth as `capacity-04`, but uses `pre_norm=True` and untied output projection weights |
+| `capacity-06` | `256` | `8` | `6` | `1024` | `3.516858631871136` | Same width/depth as `capacity-05`, keeps `pre_norm=True` and untied output projection weights, and switches position encoding to RoPE; current archived run is through epoch 34 |
 
 To reproduce that kind of workflow, train one configuration at a time and archive each run's `best.pt` into its own `checkpoints/capacity-xx/` folder before starting the next one.
 
@@ -289,9 +292,17 @@ These examples document how output quality changed across the capacity checkpoin
 | `In mathematics, a function is` | ` , in fact , a vector unit that is used as an eigenvalue in a number of binary fields . Thus , the real numbers of the two fields are in the form of a vector unit , which is a vector unit` |
 | `During the Second World War` | ` . In 1950 , the British government agreed to the US military intervention in the Vietnam War , a move that was made by the Royal Australian Navy to prevent the war from exposing the US and Australia to the United Kingdom . \n \n = = = World` |
 
+### `capacity-06`
+
+| Prompt | Generation |
+|---|---|
+| `Tokyo is the capital of` | ` the state of Japan . The capital city of Kyoto was named after the Kashima @-@ inspired Japanese city of Kyoto . \n \n = = = = Japan = = = = \n \n The city of Kyoto was the capital of the Japanese` |
+| `In mathematics, a function is` | ` also used for the most part of the game . \n \n \n = Clown Peck = \n \n Clown Peck is a fictional character in the Marvel Comics superhero film Marvel Comics . The character of Marvel Comics is a fictional character from` |
+| `During the Second World War` | `. The Army 's first combat mission was the first combat mission to be conducted by the United States Navy in 1941 . \n In September 1942 , the Army was involved in a series of air raids during World War II . The war was a major undert` |
+
 ## Conclusion
 
-This decoder-only Transformer was built from basic PyTorch components and used a Hugging Face tokenizer artifact for tokenization. The model was trained on WikiText-103 using causal multi-head self-attention and autoregressive next-token prediction. Scaling the model from 2 to 6 decoder blocks reduced the best validation loss from approximately 4.10 to 3.60. The final model learned coherent Wikipedia-style language patterns, but its limited scale resulted in factual errors, repetition, and weak long-range topic consistency. These are model-capacity and training-objective limitations rather than evidence that the Transformer pipeline is broken.
+This decoder-only Transformer was built from basic PyTorch components and used a Hugging Face tokenizer artifact for tokenization. The model was trained on WikiText-103 using causal multi-head self-attention and autoregressive next-token prediction. Scaling the model from 2 to 6 decoder blocks reduced the best validation loss from approximately 4.10 to 3.47, with the RoPE-based `capacity-06` run currently archived partway through training at a best validation loss of `3.516858631871136` after 34 epochs. The later checkpoints learned more coherent Wikipedia-style language patterns, but they still show factual drift, repetition, and weak long-range topic consistency. These are model-capacity and training-objective limitations rather than evidence that the Transformer pipeline is broken.
 
 ## Notes
 
